@@ -224,4 +224,4 @@ class Grc extends Base {
   }
 }
 
-module.exports = GrcFacility
+module.exports = Grc
