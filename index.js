@@ -104,8 +104,8 @@ class Grc extends Base {
 
     if (!this.service) {
       if (!port) {
-        console.error('no port in config set')
-        console.error('set in config file or via commandline (--apiPort=$PORT)')
+        console.error('no port set')
+        console.error('set port via commandline (--apiPort=$PORT)')
         throw new Error('ERR_NO_PORT')
       }
 
