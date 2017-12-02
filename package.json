@@ -1,0 +1,37 @@
+{
+  "name": "bfx-facs-grc",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Bitfinex Grenache Facility",
+  "author": {
+    "name": "prdn",
+    "email": "paolo@bitfinex.com"
+  },
+  "main": "index.js",
+  "keywords": [
+    "bitfinex"
+  ],
+  "dependencies": {
+    "async": "^2.6.0",
+    "bfx-facs-base": "git+https://github.com/bitfinexcom/bfx-facs-base.git",
+    "grenache-nodejs-link": "^0.7.3",
+    "grenache-nodejs-base": "^0.7.0",
+    "grenache-nodejs-http": "^0.7.1",
+    "grenache-nodejs-ws-tls": "^0.7.2",
+    "lodash": "^4.17.4"
+  },
+  "engine": {
+    "node": ">=8.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitfinexcom/bfx-facs-grc.git"
+  },
+  "maintainers": [
+    {
+      "name": "prdn",
+      "email": "paolo@bitfinex.com"
+    }
+  ]
+}
