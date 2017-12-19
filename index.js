@@ -50,7 +50,6 @@ class Grc extends Base {
 
         switch (this.conf.transport) {
           case 'http':
-
             const {
               serverKey,
               serverCert,
@@ -75,7 +74,6 @@ class Grc extends Base {
                 rejectUnauthorized: serverXUnauth
               }
             }
-
             if (clientKey && clientCert && clientCa && clientXUnauth) {
               clientSecure = {
                 key: fs.readFileSync(clientKey),
