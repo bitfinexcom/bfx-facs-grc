@@ -15,7 +15,7 @@ class Grc extends Base {
     this._hasConf = true
 
     if (!this.opts.tickInterval) {
-      this.opts.tickInterval = 5000
+      this.opts.tickInterval = 45000
     }
 
     this.init()
@@ -81,16 +81,9 @@ class Grc extends Base {
   }
 
   tick () {
-    const now = Date.now()
-
     if (this._ticking) {
-      if (now - this._ticking > 30000) {
-        console.error('WARN_TICKING_STUCK')
-      }
       return
     }
-
-    this._ticking = now
 
     let pubServices = this.opts.services
     if (!_.isArray(pubServices) || !pubServices.length) {
