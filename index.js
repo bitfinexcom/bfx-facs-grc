@@ -81,17 +81,12 @@ class Grc extends Base {
   }
 
   tick () {
-    if (this._ticking) {
-      return
-    }
-
     let pubServices = this.opts.services
     if (!_.isArray(pubServices) || !pubServices.length) {
       pubServices = null
     }
 
     if (!pubServices || !this.opts.svc_port) {
-      this._ticking = null
       return
     }
 
@@ -120,7 +115,6 @@ class Grc extends Base {
       }
     }, (err) => {
       if (err) console.error(err)
-      this._ticking = null
     })
   }
 
