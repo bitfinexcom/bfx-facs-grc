@@ -178,8 +178,8 @@ class Grc extends Base {
     }
 
     this.peer.request(service, {
-      action: action,
-      args: args
+      action,
+      args
     }, _.defaults({}, {
       timeout: 120000
     }, opts), cb)
@@ -205,8 +205,8 @@ class Grc extends Base {
     }
 
     this.peer.map(service, {
-      action: action,
-      args: args
+      action,
+      args
     }, _.defaults({}, {
       timeout: 120000
     }, opts), cb)
