@@ -6,6 +6,7 @@ const GrLink = require('grenache-nodejs-link')
 const GrHttp = require('grenache-nodejs-http')
 const GrWs = require('grenache-nodejs-ws-tls')
 const Base = require('bfx-facs-base')
+const fs = require('fs')
 
 class Grc extends Base {
   constructor (caller, opts, ctx) {
@@ -49,11 +50,46 @@ class Grc extends Base {
 
         switch (this.conf.transport) {
           case 'http':
+            const {
+              serverKey,
+              serverCert,
+              serverCa,
+              serverXUnauth,
+              serverReqCert,
+              clientKey,
+              clientCert,
+              clientCa,
+              clientXUnauth
+            } = this.conf
+
+            let serverSecure = null
+            let clientSecure = null
+            if (serverKey && serverCert && serverCa &&
+              (serverXUnauth !== undefined) && (serverReqCert !== undefined)) {
+              serverSecure = {
+                key: fs.readFileSync(serverKey),
+                cert: fs.readFileSync(serverCert),
+                ca: fs.readFileSync(serverCa),
+                requestCert: serverReqCert,
+                rejectUnauthorized: serverXUnauth
+              }
+            }
+            if (clientKey && clientCert && clientCa && clientXUnauth) {
+              clientSecure = {
+                key: fs.readFileSync(clientKey),
+                cert: fs.readFileSync(clientCert),
+                ca: fs.readFileSync(clientCa),
+                rejectUnauthorized: clientXUnauth
+              }
+            }
+
             this.peer = new GrHttp.PeerRPCClient(this.link, {
-              maxActiveKeyDests: this.opts.maxActiveKeyDests
+              maxActiveKeyDests: this.opts.maxActiveKeyDests,
+              secure: clientSecure
             })
             this.peer_srv = new GrHttp.PeerRPCServer(this.link, {
-              timeout: this.opts.server_timeout || 600000
+              timeout: this.opts.server_timeout || 600000,
+              secure: serverSecure
             })
             break
           case 'ws':
