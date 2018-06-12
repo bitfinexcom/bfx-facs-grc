@@ -18,7 +18,7 @@
     "grenache-nodejs-base": "^0.7.0",
     "grenache-nodejs-http": "^0.7.1",
     "grenache-nodejs-ws-tls": "^0.7.2",
-    "lodash": "^4.17.4"
+    "lodash": "^4.17.10"
   },
   "engine": {
     "node": ">=8.0"
