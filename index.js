@@ -33,6 +33,9 @@ class Grc extends Base {
   }
 
   setupPeers () {
+    const ctx = this.ctx
+    const cal = this.cal
+
     this.peer = new GrHttp.PeerRPCClient(this.link, {
       maxActiveKeyDests: this.opts.maxActiveKeyDests
     })
