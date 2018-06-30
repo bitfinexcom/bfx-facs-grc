@@ -4,8 +4,8 @@ const _ = require('lodash')
 const async = require('async')
 const GrLink = require('grenache-nodejs-link')
 const GrHttp = require('grenache-nodejs-http')
-const GrWs = require('grenache-nodejs-ws-tls')
 const Base = require('bfx-facs-base')
+const fs = require('fs')
 
 class Grc extends Base {
   constructor (caller, opts, ctx) {
@@ -32,7 +32,43 @@ class Grc extends Base {
     }
   }
 
+  setupPeers () {
+    this.peer = new GrHttp.PeerRPCClient(this.link, {
+      maxActiveKeyDests: this.opts.maxActiveKeyDests
+    })
+
+    this.peerSrv = new GrHttp.PeerRPCServer(this.link, {
+      timeout: this.opts.server_timeout || 600000
+    })
+
+    const certsDir = `${cal.ctx.root}/certs`
+
+    if (fs.existsSync(certsDir)) {
+      this.peerSec = new GrHttp.PeerRPCClient(this.link, {
+        maxActiveKeyDests: this.opts.maxActiveKeyDests,
+        secure: {
+          key: fs.readFileSync(`${certsDir}/client-key.pem`),
+          cert: fs.readFileSync(`${certsDir}/client-crt.pem`),
+          ca: fs.readFileSync(`${certsDir}/ca-crt.pem`),
+          requestCert: true
+        }
+      })
+
+      this.peerSecSrv = new GrHttp.PeerRPCServer(this.link, {
+        timeout: this.opts.server_timeout || 600000,
+        secure: {
+          key: fs.readFileSync(`${certsDir}/server-key.pem`),
+          cert: fs.readFileSync(`${certsDir}/server-crt.pem`),
+          ca: fs.readFileSync(`${certsDir}/ca-crt.pem`),
+          requestCert: true
+        }
+      })
+    }
+  }
+
   _start (cb) {
+    const ctx = this.ctx
+
     async.series([
       next => { super._start(next) },
       next => {
@@ -44,29 +80,20 @@ class Grc extends Base {
 
         this.link.start()
 
-        this.peer = null
-        this.peer_srv = null
-
         switch (this.conf.transport) {
           case 'http':
-            this.peer = new GrHttp.PeerRPCClient(this.link, {
-              maxActiveKeyDests: this.opts.maxActiveKeyDests
-            })
-            this.peer_srv = new GrHttp.PeerRPCServer(this.link, {
-              timeout: this.opts.server_timeout || 600000
-            })
-            break
-          case 'ws':
-            this.peer = new GrWs.PeerRPCClient(this.link, {
-              maxActiveKeyDests: this.opts.maxActiveKeyDests
-            })
-            this.peer_srv = new GrWs.PeerRPCServer(this.link, {})
+            this.setupPeers()
             break
         }
 
         if (this.peer) {
           this.peer.init()
-          this.peer_srv.init()
+          this.peerSrv.init()
+
+          if (this.peerSec) {
+            this.peerSec.init()
+            this.peerSecSrv.init()
+          }
 
           this._tickItv = setInterval(() => {
             this.tick()
@@ -81,13 +108,19 @@ class Grc extends Base {
   }
 
   tick () {
-    let pubServices = this.opts.services
+    let pubServices = _.clone(this.opts.services)
     if (!_.isArray(pubServices) || !pubServices.length) {
       pubServices = null
     }
 
     if (!pubServices || !this.opts.svc_port) {
       return
+    }
+
+    if (this.peerSec) {
+      _.each(pubServices, s => {
+        pubServices.push(`sec:${s}`)
+      })
     }
 
     const port = this.opts.svc_port
@@ -99,9 +132,15 @@ class Grc extends Base {
         throw new Error('ERR_NO_PORT')
       }
 
-      this.service = this.peer_srv.transport('server')
+      this.service = this.peerSrv.transport('server')
       this.service.listen(port)
       this.service.on('request', this.onRequest.bind(this))
+
+      if (this.peerSec) {
+        this.serviceSec = this.peerSecSrv.transport('server')
+        this.serviceSec.listen(port + 2000)
+        this.serviceSec.on('request', this.onRequest.bind(this))
+      }
     }
 
     async.auto({
@@ -127,6 +166,10 @@ class Grc extends Base {
         if (this.service) {
           this.service.stop()
           this.service.removeListener('request', this.onRequest.bind(this))
+          if (this.serviceSec) {
+            this.serviceSec.stop()
+            this.serviceSec.removeListener('request', this.onRequest.bind(this))
+          }
         }
 
         next()
@@ -177,7 +220,8 @@ class Grc extends Base {
       _cb(err ? new Error(err) : null, res)
     }
 
-    this.peer.request(service, {
+    const peer = service.indexOf('sec:') > -1 ? this.peerSec : this.peer
+    peer.request(service, {
       action,
       args
     }, _.defaults({}, {
@@ -204,7 +248,9 @@ class Grc extends Base {
       _cb(err ? new Error(err) : null, res)
     }
 
-    this.peer.map(service, {
+    const peer = service.indexOf('sec:') > -1 ? this.peerSec : this.peer
+
+    peer.map(service, {
       action,
       args
     }, _.defaults({}, {
