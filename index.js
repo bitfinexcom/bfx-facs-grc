@@ -29,8 +29,12 @@ class Grc extends Base {
     if (this.api) {
       const api = this.api
 
-      payload._isSecure = true
-      payload._cert = cert
+      if (cert) {
+        payload._isSecure = true
+        payload._auth = {
+          fingerprint: cert.fingerprint.toString('hex')
+        }
+      }
 
       api.handle(service, payload, (err, res) => {
         handler.reply(_.isString(err) ? new Error(err) : err, res)
