@@ -28,7 +28,10 @@ class Grc extends Base {
   onRequest (rid, service, payload, handler, cert) {
     if (this.api) {
       const api = this.api
+
+      payload._isSecure = true
       payload._cert = cert
+
       api.handle(service, payload, (err, res) => {
         handler.reply(_.isString(err) ? new Error(err) : err, res)
       })
