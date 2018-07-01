@@ -18,7 +18,9 @@ class Grc extends Base {
       this.opts.tickInterval = 45000
     }
 
-    this.opts.secPortOffset = 2000
+    if (!this.opts.secPortOffset) {
+      this.opts.secPortOffset = 2000
+    }
 
     this.init()
   }
@@ -26,6 +28,7 @@ class Grc extends Base {
   onRequest (rid, service, payload, handler, cert) {
     if (this.api) {
       const api = this.api
+      payload._cert = cert
       api.handle(service, payload, (err, res) => {
         handler.reply(_.isString(err) ? new Error(err) : err, res)
       })
@@ -38,37 +41,54 @@ class Grc extends Base {
     const ctx = this.ctx
     const cal = this.cal
 
-    this.peer = new GrHttp.PeerRPCClient(this.link, {
-      maxActiveKeyDests: this.opts.maxActiveKeyDests
-    })
+    if (!this.conf.protos) {
+      this.conf.protos = ['gen', 'sec']
+    }
 
-    this.peerSrv = new GrHttp.PeerRPCServer(this.link, {
-      timeout: this.opts.server_timeout || 600000
-    })
+    const protos = this.conf.protos
 
-    const certsDir = `${this.opts.root}/certs`
-
-    console.log('certsDir', certsDir)
-    if (fs.existsSync(certsDir)) {
-      this.peerSec = new GrHttp.PeerRPCClient(this.link, {
-        maxActiveKeyDests: this.opts.maxActiveKeyDests,
-        secure: {
-          key: fs.readFileSync(`${certsDir}/client-key.pem`),
-          cert: fs.readFileSync(`${certsDir}/client-crt.pem`),
-          ca: fs.readFileSync(`${certsDir}/ca-crt.pem`),
-          requestCert: true
-        }
+    if (protos.indexOf('gen') > -1) {
+      this.peer = new GrHttp.PeerRPCClient(this.link, {
+        maxActiveKeyDests: this.opts.maxActiveKeyDests
       })
 
-      this.peerSecSrv = new GrHttp.PeerRPCServer(this.link, {
-        timeout: this.opts.server_timeout || 600000,
-        secure: {
-          key: fs.readFileSync(`${certsDir}/server-key.pem`),
-          cert: fs.readFileSync(`${certsDir}/server-crt.pem`),
-          ca: fs.readFileSync(`${certsDir}/ca-crt.pem`),
-          requestCert: true
-        }
+      this.peerSrv = new GrHttp.PeerRPCServer(this.link, {
+        timeout: this.opts.server_timeout || 600000
       })
+    }
+
+    if (protos.indexOf('sec') > -1) {
+      const secPath = `${this.opts.root}/sec`
+
+      if (fs.existsSync(secPath)) {
+        this.peerSec = new GrHttp.PeerRPCClient(this.link, {
+          maxActiveKeyDests: this.opts.maxActiveKeyDests,
+          secure: {
+            key: fs.readFileSync(`${secPath}/client-key.pem`),
+            cert: fs.readFileSync(`${secPath}/client-crt.pem`),
+            ca: fs.readFileSync(`${secPath}/ca-crt.pem`),
+            requestCert: true
+          }
+        })
+
+        this.peerSecSrv = new GrHttp.PeerRPCServer(this.link, {
+          timeout: this.opts.server_timeout || 600000,
+          secure: {
+            key: fs.readFileSync(`${secPath}/server-key.pem`),
+            cert: fs.readFileSync(`${secPath}/server-crt.pem`),
+            ca: fs.readFileSync(`${secPath}/ca-crt.pem`),
+            requestCert: true
+          }
+        })
+
+        let acl = null
+        try {
+          const data = fs.readFileSync(`${secPath}/acl.json`)
+          acl = JSON.parse(acl)
+        } catch (err) {}
+
+        this.aclSec = acl
+      }
     }
   }
 
@@ -95,18 +115,18 @@ class Grc extends Base {
         if (this.peer) {
           this.peer.init()
           this.peerSrv.init()
-
-          if (this.peerSec) {
-            this.peerSec.init()
-            this.peerSecSrv.init()
-          }
-
-          this._tickItv = setInterval(() => {
-            this.tick()
-          }, this.opts.tickInterval)
-
-          this.tick()
         }
+
+        if (this.peerSec) {
+          this.peerSec.init()
+          this.peerSecSrv.init()
+        }
+
+        this._tickItv = setInterval(() => {
+          this.tick()
+        }, this.opts.tickInterval)
+
+        this.tick()
 
         next()
       }
@@ -130,29 +150,29 @@ class Grc extends Base {
     }
 
     const port = this.opts.svc_port
+    if (!port) {
+      console.error('no port set')
+      console.error('set port via commandline (--apiPort=$PORT)')
+      throw new Error('ERR_NO_PORT')
+    }
 
-    if (!this.service) {
-      if (!port) {
-        console.error('no port set')
-        console.error('set port via commandline (--apiPort=$PORT)')
-        throw new Error('ERR_NO_PORT')
-      }
-
+    if (!this.service && this.peerSrv) {
       this.service = this.peerSrv.transport('server')
       this.service.listen(port)
       this.service.on('request', this.onRequest.bind(this))
+    }
 
-      if (this.peerSec) {
-        this.serviceSec = this.peerSecSrv.transport('server')
-        this.serviceSec.listen(port + this.opts.secPortOffset)
-        this.serviceSec.on('request', this.onRequest.bind(this))
-      }
+    if (!this.serviceSec && this.peerSec) {
+      this.serviceSec = this.peerSecSrv.transport('server')
+      this.serviceSec.listen(port + this.opts.secPortOffset)
+      this.serviceSec.on('request', this.onRequest.bind(this))
     }
 
     async.auto({
       announce: next => {
         async.eachSeries(pubServices, (srv, next) => {
-          this.link.announce(srv, srv.indexOf('sec:') === 0 ? port + this.opts.secPortOffset : port, {}, (err) => {
+          const tPort = srv.indexOf('sec:') === 0 ? port + this.opts.secPortOffset : port
+          this.link.announce(srv, tPort, {}, (err) => {
             if (err) console.error(err)
             next()
           })
@@ -172,10 +192,11 @@ class Grc extends Base {
         if (this.service) {
           this.service.stop()
           this.service.removeListener('request', this.onRequest.bind(this))
-          if (this.serviceSec) {
-            this.serviceSec.stop()
-            this.serviceSec.removeListener('request', this.onRequest.bind(this))
-          }
+        }
+
+       if (this.serviceSec) {
+          this.serviceSec.stop()
+          this.serviceSec.removeListener('request', this.onRequest.bind(this))
         }
 
         next()
