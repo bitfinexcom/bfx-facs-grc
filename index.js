@@ -25,12 +25,18 @@ class Grc extends Base {
     this.init()
   }
 
+  onRequestSec (rid, service, payload, handler, cert) {
+    if (this.api) {
+      payload._isSecure = true
+      payload._cert = cert
+    }
+
+    this.onRequest(rid, service, payload, handler, cert)
+  }
+
   onRequest (rid, service, payload, handler, cert) {
     if (this.api) {
       const api = this.api
-
-      payload._isSecure = true
-      payload._cert = cert
 
       api.handle(service, payload, (err, res) => {
         handler.reply(_.isString(err) ? new Error(err) : err, res)
@@ -168,7 +174,7 @@ class Grc extends Base {
     if (!this.serviceSec && this.peerSec) {
       this.serviceSec = this.peerSecSrv.transport('server')
       this.serviceSec.listen(port + this.opts.secPortOffset)
-      this.serviceSec.on('request', this.onRequest.bind(this))
+      this.serviceSec.on('request', this.onRequestSec.bind(this))
     }
 
     async.auto({
