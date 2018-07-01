@@ -90,7 +90,7 @@ class Grc extends Base {
         let acl = null
         try {
           const data = fs.readFileSync(`${secPath}/acl.json`)
-          acl = JSON.parse(acl)
+          acl = JSON.parse(data)
         } catch (err) {}
 
         this.aclSec = acl
