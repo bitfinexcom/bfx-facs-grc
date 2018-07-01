@@ -25,7 +25,7 @@ class Grc extends Base {
     this.init()
   }
 
-  onRequestSec (rid, service, payload, handler, cert) {
+  onRequest (rid, service, payload, handler, cert) {
     if (this.api) {
       const api = this.api
 
