@@ -47,9 +47,6 @@ class Grc extends Base {
   }
 
   setupPeers () {
-    const ctx = this.ctx
-    const cal = this.cal
-
     if (!this.conf.protos) {
       this.conf.protos = ['gen', 'sec']
     }
@@ -102,8 +99,6 @@ class Grc extends Base {
   }
 
   _start (cb) {
-    const ctx = this.ctx
-
     async.series([
       next => { super._start(next) },
       next => {
@@ -203,7 +198,7 @@ class Grc extends Base {
           this.service.removeListener('request', this.onRequest.bind(this))
         }
 
-       if (this.serviceSec) {
+        if (this.serviceSec) {
           this.serviceSec.stop()
           this.serviceSec.removeListener('request', this.onRequest.bind(this))
         }
