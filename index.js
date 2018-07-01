@@ -18,10 +18,12 @@ class Grc extends Base {
       this.opts.tickInterval = 45000
     }
 
+    this.opts.secPortOffset = 2000
+
     this.init()
   }
 
-  onRequest (rid, service, payload, handler) {
+  onRequest (rid, service, payload, handler, cert) {
     if (this.api) {
       const api = this.api
       api.handle(service, payload, (err, res) => {
@@ -44,8 +46,9 @@ class Grc extends Base {
       timeout: this.opts.server_timeout || 600000
     })
 
-    const certsDir = `${cal.ctx.root}/certs`
+    const certsDir = `${this.opts.root}/certs`
 
+    console.log('certsDir', certsDir)
     if (fs.existsSync(certsDir)) {
       this.peerSec = new GrHttp.PeerRPCClient(this.link, {
         maxActiveKeyDests: this.opts.maxActiveKeyDests,
@@ -141,7 +144,7 @@ class Grc extends Base {
 
       if (this.peerSec) {
         this.serviceSec = this.peerSecSrv.transport('server')
-        this.serviceSec.listen(port + 2000)
+        this.serviceSec.listen(port + this.opts.secPortOffset)
         this.serviceSec.on('request', this.onRequest.bind(this))
       }
     }
@@ -149,7 +152,7 @@ class Grc extends Base {
     async.auto({
       announce: next => {
         async.eachSeries(pubServices, (srv, next) => {
-          this.link.announce(srv, port, {}, (err) => {
+          this.link.announce(srv, srv.indexOf('sec:') === 0 ? port + this.opts.secPortOffset : port, {}, (err) => {
             if (err) console.error(err)
             next()
           })
@@ -223,7 +226,7 @@ class Grc extends Base {
       _cb(err ? new Error(err) : null, res)
     }
 
-    const peer = service.indexOf('sec:') > -1 ? this.peerSec : this.peer
+    const peer = service.indexOf('sec:') === 0 ? this.peerSec : this.peer
     peer.request(service, {
       action,
       args
@@ -251,7 +254,7 @@ class Grc extends Base {
       _cb(err ? new Error(err) : null, res)
     }
 
-    const peer = service.indexOf('sec:') > -1 ? this.peerSec : this.peer
+    const peer = service.indexOf('sec:') === 0 ? this.peerSec : this.peer
 
     peer.map(service, {
       action,
