@@ -25,12 +25,18 @@ class Grc extends Base {
     this.init()
   }
 
+  onRequestSec (rid, service, payload, handler, cert) {
+    if (this.api) {
+      payload._isSecure = true
+      payload._cert = cert
+    }
+
+    this.onRequest(rid, service, payload, handler, cert)
+  }
+
   onRequest (rid, service, payload, handler, cert) {
     if (this.api) {
       const api = this.api
-
-      payload._isSecure = true
-      payload._cert = cert
 
       api.handle(service, payload, (err, res) => {
         handler.reply(_.isString(err) ? new Error(err) : err, res)
@@ -41,9 +47,6 @@ class Grc extends Base {
   }
 
   setupPeers () {
-    const ctx = this.ctx
-    const cal = this.cal
-
     if (!this.conf.protos) {
       this.conf.protos = ['gen', 'sec']
     }
@@ -87,7 +90,7 @@ class Grc extends Base {
         let acl = null
         try {
           const data = fs.readFileSync(`${secPath}/acl.json`)
-          acl = JSON.parse(acl)
+          acl = JSON.parse(data)
         } catch (err) {}
 
         this.aclSec = acl
@@ -96,8 +99,6 @@ class Grc extends Base {
   }
 
   _start (cb) {
-    const ctx = this.ctx
-
     async.series([
       next => { super._start(next) },
       next => {
@@ -168,7 +169,7 @@ class Grc extends Base {
     if (!this.serviceSec && this.peerSec) {
       this.serviceSec = this.peerSecSrv.transport('server')
       this.serviceSec.listen(port + this.opts.secPortOffset)
-      this.serviceSec.on('request', this.onRequest.bind(this))
+      this.serviceSec.on('request', this.onRequestSec.bind(this))
     }
 
     async.auto({
@@ -197,7 +198,7 @@ class Grc extends Base {
           this.service.removeListener('request', this.onRequest.bind(this))
         }
 
-       if (this.serviceSec) {
+        if (this.serviceSec) {
           this.serviceSec.stop()
           this.serviceSec.removeListener('request', this.onRequest.bind(this))
         }
