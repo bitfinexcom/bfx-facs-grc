@@ -25,10 +25,35 @@ class Grc extends Base {
     this.init()
   }
 
-  onRequest (rid, service, payload, handler, cert) {
-    if (this.api) {
-      const api = this.api
+  onPreparse (service, req, res, meta, handler) {
+    const api = this.api
 
+    // stream
+    const action = api.getStreamHandler(meta.action)
+    if (api && action) {
+      const rid = meta.infoHeaders[0]
+      const service = meta.infoHeaders[1]
+
+      if (meta.cert) {
+        meta._isSecure = true
+        meta._auth = {
+          fingerprint: meta.cert.fingerprint.toString('hex')
+        }
+      }
+
+      api.handleStream(service, action, req, res, meta, (err, res) => {
+        handler.reply(rid, _.isString(err) ? new Error(err) : err, res)
+      })
+      return
+    }
+
+    service.handleBufferedRequest(req, res, meta)
+  }
+
+  onRequest (rid, service, payload, handler, cert) {
+    const api = this.api
+
+    if (api) {
       if (cert) {
         payload._isSecure = true
         payload._auth = {
@@ -57,7 +82,8 @@ class Grc extends Base {
       })
 
       this.peerSrv = new GrHttp.PeerRPCServer(this.link, {
-        timeout: this.opts.server_timeout || 600000
+        timeout: this.opts.server_timeout || 600000,
+        disableBuffered: true
       })
     }
 
@@ -82,7 +108,8 @@ class Grc extends Base {
             cert: fs.readFileSync(`${secPath}/server-crt.pem`),
             ca: fs.readFileSync(`${secPath}/ca-crt.pem`),
             requestCert: true
-          }
+          },
+          disableBuffered: true
         })
       }
     }
@@ -153,12 +180,14 @@ class Grc extends Base {
     if (!this.service && this.peerSrv) {
       this.service = this.peerSrv.transport('server')
       this.service.listen(port)
+      this.service.on('stream', this.onPreparse.bind(this, this.service))
       this.service.on('request', this.onRequest.bind(this))
     }
 
     if (!this.serviceSec && this.peerSec) {
       this.serviceSec = this.peerSecSrv.transport('server')
       this.serviceSec.listen(port + this.opts.secPortOffset)
+      this.serviceSec.on('stream', this.onPreparse.bind(this, this.service))
       this.serviceSec.on('request', this.onRequest.bind(this))
     }
 
@@ -186,11 +215,13 @@ class Grc extends Base {
         if (this.service) {
           this.service.stop()
           this.service.removeListener('request', this.onRequest.bind(this))
+          this.service.removeListener('stream', this.onPreparse.bind(this, this.service))
         }
 
         if (this.serviceSec) {
           this.serviceSec.stop()
           this.serviceSec.removeListener('request', this.onRequest.bind(this))
+          this.serviceSec.removeListener('stream', this.onPreparse.bind(this, this.service))
         }
 
         next()
