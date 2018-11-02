@@ -211,6 +211,17 @@ class Grc extends Base {
       next => { super._stop(next) },
       next => {
         clearInterval(this._announceItv)
+        clearInterval(this._tickItv)
+
+        this.link.stop()
+
+        if (this.peerSec) {
+          this.peerSec.stop()
+        }
+
+        if (this.peer) {
+          this.peer.stop()
+        }
 
         if (this.service) {
           this.service.stop()
