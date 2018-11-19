@@ -289,27 +289,29 @@ class Grc extends Base {
 
     const peer = service.indexOf('sec:') === 0 ? this.peerSec : this.peer
 
+    const opts = _.defaults({}, {
+      timeout: 120000
+    }, _opts)
+
     if (_.isFunction(_cb)) {
       isPromise = false
       peer.request(service, {
         action,
         args
-      }, _.defaults({}, {
-        timeout: 120000
-      }, opts), cb)
-    } else {
-      isPromise = true
-      return new Promise((resolve, reject) => {
-        _resolve = resolve
-        _reject = reject
-        peer.request(service, {
-          action,
-          args
-        }, _.defaults({}, {
-          timeout: 120000
-        }, opts), cb)
-      })
+      }, opts, cb)
+
+      return
     }
+
+    isPromise = true
+    return new Promise((resolve, reject) => {
+      _resolve = resolve
+      _reject = reject
+      peer.request(service, {
+        action,
+        args
+      }, opts, cb)
+    })
   }
 
   map (service, action, args, opts = {}, _cb) {
