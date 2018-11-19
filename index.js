@@ -260,7 +260,21 @@ class Grc extends Base {
     this.opts.services = _.difference(this.opts.services, ss)
   }
 
-  req (service, action, args, opts = {}, _cb) {
+  reqStream (service, action, args, _opts = {}) {
+    if (!_.isString(action)) throw new Error('ERR_GRC_REQ_ACTION_INVALID')
+    if (!_.isArray(args)) throw new Error('ERR_GRC_REQ_ARGS_INVALID')
+
+    const peer = service.indexOf('sec:') === 0 ? this.peerSec : this.peer
+
+    const opts = _.defaults({}, {
+      headers: { _a: action, _ar: args },
+      timeout: 120000
+    }, _opts)
+
+    return peer.stream(service, opts)
+  }
+
+  req (service, action, args, _opts = {}, _cb) {
     if (!_.isString(action)) return _cb(new Error('ERR_GRC_REQ_ACTION_INVALID'))
     if (!_.isArray(args)) return _cb(new Error('ERR_GRC_REQ_ARGS_INVALID'))
 
