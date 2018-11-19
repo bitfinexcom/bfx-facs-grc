@@ -260,7 +260,21 @@ class Grc extends Base {
     this.opts.services = _.difference(this.opts.services, ss)
   }
 
-  req (service, action, args, opts = {}, _cb) {
+  reqStream (service, action, args, _opts = {}) {
+    if (!_.isString(action)) throw new Error('ERR_GRC_REQ_ACTION_INVALID')
+    if (!_.isArray(args)) throw new Error('ERR_GRC_REQ_ARGS_INVALID')
+
+    const peer = service.indexOf('sec:') === 0 ? this.peerSec : this.peer
+
+    const opts = _.defaults({}, {
+      headers: { _a: action, _ar: args },
+      timeout: 120000
+    }, _opts)
+
+    return peer.stream(service, opts)
+  }
+
+  req (service, action, args, _opts = {}, _cb) {
     if (!_.isString(action)) return _cb(new Error('ERR_GRC_REQ_ACTION_INVALID'))
     if (!_.isArray(args)) return _cb(new Error('ERR_GRC_REQ_ARGS_INVALID'))
 
@@ -289,27 +303,29 @@ class Grc extends Base {
 
     const peer = service.indexOf('sec:') === 0 ? this.peerSec : this.peer
 
+    const opts = _.defaults({}, {
+      timeout: 120000
+    }, _opts)
+
     if (_.isFunction(_cb)) {
       isPromise = false
       peer.request(service, {
         action,
         args
-      }, _.defaults({}, {
-        timeout: 120000
-      }, opts), cb)
-    } else {
-      isPromise = true
-      return new Promise((resolve, reject) => {
-        _resolve = resolve
-        _reject = reject
-        peer.request(service, {
-          action,
-          args
-        }, _.defaults({}, {
-          timeout: 120000
-        }, opts), cb)
-      })
+      }, opts, cb)
+
+      return
     }
+
+    isPromise = true
+    return new Promise((resolve, reject) => {
+      _resolve = resolve
+      _reject = reject
+      peer.request(service, {
+        action,
+        args
+      }, opts, cb)
+    })
   }
 
   map (service, action, args, opts = {}, _cb) {
