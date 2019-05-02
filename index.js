@@ -22,6 +22,14 @@ class Grc extends Base {
       this.opts.secPortOffset = 2000
     }
 
+    caller.on('started', () => {
+      this._tickItv = setInterval(() => {
+        this.tick()
+      }, this.opts.tickInterval)
+
+      this.tick()
+    })
+
     this.init()
   }
 
@@ -142,12 +150,6 @@ class Grc extends Base {
           this.peerSec.init()
           this.peerSecSrv.init()
         }
-
-        this._tickItv = setInterval(() => {
-          this.tick()
-        }, this.opts.tickInterval)
-
-        this.tick()
 
         next()
       }
