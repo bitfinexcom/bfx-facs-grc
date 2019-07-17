@@ -189,7 +189,7 @@ class Grc extends Base {
     if (!this.serviceSec && this.peerSec) {
       this.serviceSec = this.peerSecSrv.transport('server')
       this.serviceSec.listen(port + this.opts.secPortOffset)
-      this.serviceSec.on('stream', this.onPreparse.bind(this, this.service))
+      this.serviceSec.on('stream', this.onPreparse.bind(this, this.serviceSec))
       this.serviceSec.on('request', this.onRequest.bind(this))
     }
 
