@@ -99,28 +99,52 @@ class Grc extends Base {
       const secPath = `${this.opts.root}/sec`
 
       if (fs.existsSync(secPath)) {
+        const sslConf = this.getSslConf(secPath)
+
         this.peerSec = new GrHttp.PeerRPCClient(this.link, {
           maxActiveKeyDests: this.opts.maxActiveKeyDests,
-          secure: {
-            key: fs.readFileSync(`${secPath}/client-key.pem`),
-            cert: fs.readFileSync(`${secPath}/client-crt.pem`),
-            ca: fs.readFileSync(`${secPath}/ca-crt.pem`),
-            requestCert: true
-          }
+          secure: sslConf.peer
         })
 
         this.peerSecSrv = new GrHttp.PeerRPCServer(this.link, {
           timeout: this.opts.server_timeout || 600000,
-          secure: {
-            key: fs.readFileSync(`${secPath}/server-key.pem`),
-            cert: fs.readFileSync(`${secPath}/server-crt.pem`),
-            ca: fs.readFileSync(`${secPath}/ca-crt.pem`),
-            requestCert: true
-          },
+          secure: sslConf.srv,
           disableBuffered: true
         })
       }
     }
+  }
+
+  getSslConf (secPath) {
+    const peerSecOptsDefault = {
+      key: fs.readFileSync(`${secPath}/client-key.pem`),
+      cert: fs.readFileSync(`${secPath}/client-crt.pem`),
+      ca: fs.readFileSync(`${secPath}/ca-crt.pem`),
+      requestCert: true
+    }
+
+    const srvSecOptsDefault = {
+      key: fs.readFileSync(`${secPath}/server-key.pem`),
+      cert: fs.readFileSync(`${secPath}/server-crt.pem`),
+      ca: fs.readFileSync(`${secPath}/ca-crt.pem`),
+      requestCert: true
+    }
+
+    if (!this.conf.ssl) {
+      return { peer: peerSecOptsDefault, srv: srvSecOptsDefault }
+    }
+
+    let peer = peerSecOptsDefault
+    if (this.conf.ssl.peer) {
+      peer = _.assign({}, peerSecOptsDefault, this.conf.ssl.peer)
+    }
+
+    let srv = srvSecOptsDefault
+    if (this.conf.ssl.srv) {
+      peer = _.assign({}, srvSecOptsDefault, this.conf.ssl.srv)
+    }
+
+    return { peer, srv }
   }
 
   _start (cb) {
