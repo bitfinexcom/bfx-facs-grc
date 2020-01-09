@@ -152,7 +152,7 @@ class Grc extends Base {
       next => { super._start(next) },
       next => {
         this.link = new GrLink({
-          grape: this.conf.grape,
+          grape: this.opts.grape || this.conf.grape,
           requestTimeout: this.opts.linkRequestTimeout || 2500,
           lruMaxAgeLookup: this.opts.linkRruMaxAgeLookup || 10000
         })
