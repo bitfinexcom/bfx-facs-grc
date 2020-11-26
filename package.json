@@ -11,6 +11,9 @@
   "keywords": [
     "bitfinex"
   ],
+  "scripts": {
+    "test": "mocha"
+  },
   "dependencies": {
     "async": "^2.6.1",
     "bfx-facs-base": "git+https://github.com/bitfinexcom/bfx-facs-base.git",
@@ -32,5 +35,9 @@
       "name": "prdn",
       "email": "paolo@bitfinex.com"
     }
-  ]
+  ],
+  "devDependencies": {
+    "bfx-svc-test-helper": "git+https://github.com/bitfinexcom/bfx-svc-test-helper.git",
+    "mocha": "^8.2.1"
+  }
 }
