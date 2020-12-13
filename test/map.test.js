@@ -84,6 +84,36 @@ describe('RPC integration: map', () => {
       })
     })
 
+    it('double cb error', done => {
+      const originalPeer = fac.peer
+      const originalConsoleError = console.error
+
+      let errorArgs
+      console.error = (...args) => {
+        if (errorArgs) {
+          done(new Error('Should have been called once'))
+        }
+        errorArgs = args
+      }
+
+      fac.peer = {
+        map (service, args, opts, cb) {
+          cb()
+          cb()
+          fac.peer = originalPeer
+          console.error = originalConsoleError
+          assert.strictEqual(errorArgs[0], 'ERR_DOUBLE_CB')
+          assert.strictEqual(errorArgs[1], 'rest:util:net')
+          assert.strictEqual(errorArgs[2], 'getIpInfo')
+          done()
+        }
+      }
+
+      fac.map('rest:util:net', 'getIpInfo', [], {}, () => {
+        assert.strictEqual(errorArgs, undefined)
+      })
+    })
+
     it('invalid args', done => {
       fac.map('rest:util:net', 'getIpInfo', {}, {}, (err, res) => {
         assert.strictEqual(err.message, 'ERR_GRC_REQ_ARGS_INVALID')
@@ -116,6 +146,33 @@ describe('RPC integration: map', () => {
         return
       }
       throw new Error('Should have thrown')
+    })
+
+    it('double cb error', async () => {
+      const originalPeer = fac.peer
+      const originalConsoleError = console.error
+
+      fac.peer = {
+        map (service, args, opts, cb) {
+          cb()
+          cb()
+          assert.strictEqual(errorArgs[0], 'ERR_DOUBLE_CB')
+          assert.strictEqual(errorArgs[1], 'rest:util:net')
+          assert.strictEqual(errorArgs[2], 'getIpInfo')
+          fac.peer = originalPeer
+          console.error = originalConsoleError
+        }
+      }
+
+      let errorArgs
+      console.error = (...args) => {
+        if (errorArgs) {
+          throw new Error('Should have been called once')
+        }
+        errorArgs = args
+      }
+
+      await fac.map('rest:util:net', 'getIpInfo', [], {})
     })
 
     it('invalid args', async () => {

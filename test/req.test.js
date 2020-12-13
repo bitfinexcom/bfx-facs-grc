@@ -15,7 +15,8 @@ const stubs = {
     getIpInfo (space, ip, cb) {
       const res = [ip, { country: 'US', region: 'CA' }]
       return cb(null, res)
-    }
+    },
+    getTimeoutErr () {}
   }
 }
 
@@ -25,7 +26,7 @@ const caller = {
   ctx: { root: __dirname }
 }
 
-const fac = new Fac(caller, {})
+const fac = new Fac(caller, { requestTimeout: 5000 })
 fac.tick = () => {}
 fac.conf = { grape: 'http://127.0.0.1:30001', transport: 'http' }
 
@@ -33,8 +34,6 @@ let fxg
 describe('RPC integration: req', () => {
   before(async function () {
     this.timeout(20000)
-
-    grapes.onAnnounce()
 
     await grapes.start()
     fxg = createFxGrenache(stubs, grapes)
@@ -68,9 +67,39 @@ describe('RPC integration: req', () => {
     })
 
     it('lookup error', done => {
-      fac.req('foo:test:net', 'getIpInfo', [], {}, (err, res) => {
+      fac.req('foo:test:net', 'getIpInfo', ['8.8.8.8'], {}, (err) => {
         assert.strictEqual(err.message, 'Error: ERR_GRAPE_LOOKUP_EMPTY')
         done()
+      })
+    })
+
+    it('double cb error', done => {
+      const originalPeer = fac.peer
+      const originalConsoleError = console.error
+
+      let errorArgs
+      console.error = (...args) => {
+        if (errorArgs) {
+          done(new Error('Should have been called once'))
+        }
+        errorArgs = args
+      }
+
+      fac.peer = {
+        request (service, args, opts, cb) {
+          cb()
+          cb()
+          fac.peer = originalPeer
+          console.error = originalConsoleError
+          assert.strictEqual(errorArgs[0], 'ERR_DOUBLE_CB')
+          assert.strictEqual(errorArgs[1], 'rest:util:net')
+          assert.strictEqual(errorArgs[2], 'getIpInfo')
+          done()
+        }
+      }
+
+      fac.req('rest:util:net', 'getIpInfo', [], {}, () => {
+        assert.strictEqual(errorArgs, undefined)
       })
     })
 
@@ -103,6 +132,33 @@ describe('RPC integration: req', () => {
         return
       }
       throw new Error('Should have thrown')
+    })
+
+    it('double cb error', async () => {
+      const originalPeer = fac.peer
+      const originalConsoleError = console.error
+
+      fac.peer = {
+        request (service, args, opts, cb) {
+          cb()
+          cb()
+          assert.strictEqual(errorArgs[0], 'ERR_DOUBLE_CB')
+          assert.strictEqual(errorArgs[1], 'rest:util:net')
+          assert.strictEqual(errorArgs[2], 'getIpInfo')
+          fac.peer = originalPeer
+          console.error = originalConsoleError
+        }
+      }
+
+      let errorArgs
+      console.error = (...args) => {
+        if (errorArgs) {
+          throw new Error('Should have been called once')
+        }
+        errorArgs = args
+      }
+
+      await fac.req('rest:util:net', 'getIpInfo', [], {})
     })
 
     it('invalid args', async () => {

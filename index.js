@@ -315,7 +315,11 @@ class Grc extends Base {
     let _resolve, _reject
     const cb = (err, res) => {
       if (err) {
-        console.error(service, action, args, err)
+        if (err === 'ERR_TIMEOUT') {
+          console.error('ERR_TIMEOUT received', service, action, args)
+        } else {
+          console.error(service, action, args, err)
+        }
       }
 
       if (isExecuted) {
@@ -323,9 +327,6 @@ class Grc extends Base {
         return
       }
       isExecuted = true
-      if (err === 'ERR_TIMEOUT') {
-        console.error('ERR_TIMEOUT received', service, action)
-      }
 
       if (isPromise) {
         return err ? _reject(new Error(err)) : _resolve(res)
