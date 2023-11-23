@@ -7,7 +7,7 @@ const GrHttp = require('grenache-nodejs-http')
 const Base = require('bfx-facs-base')
 const fs = require('fs')
 
-const { buildErr, getErr } = require('./lib')
+const { buildErr } = require('./lib/utils')
 
 class Grc extends Base {
   constructor (caller, opts, ctx) {
@@ -52,7 +52,7 @@ class Grc extends Base {
       }
 
       api.handleStream(service, action, req, res, meta, (err, res) => {
-        handler.reply(rid, getErr(err), res)
+        handler.reply(rid, buildErr(err), res)
       })
       return
     }
@@ -72,7 +72,7 @@ class Grc extends Base {
       }
 
       api.handle(service, payload, (err, res) => {
-        handler.reply(getErr(err), res)
+        handler.reply(buildErr(err), res)
       })
     } else {
       this.emit('request', rid, service, payload, handler)
