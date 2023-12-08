@@ -7,6 +7,8 @@ const GrHttp = require('grenache-nodejs-http')
 const Base = require('bfx-facs-base')
 const fs = require('fs')
 
+const { buildErr } = require('./lib/utils')
+
 class Grc extends Base {
   constructor (caller, opts, ctx) {
     super(caller, opts, ctx)
@@ -50,7 +52,7 @@ class Grc extends Base {
       }
 
       api.handleStream(service, action, req, res, meta, (err, res) => {
-        handler.reply(rid, _.isString(err) ? new Error(err) : err, res)
+        handler.reply(rid, buildErr(err), res)
       })
       return
     }
@@ -70,7 +72,7 @@ class Grc extends Base {
       }
 
       api.handle(service, payload, (err, res) => {
-        handler.reply(_.isString(err) ? new Error(err) : err, res)
+        handler.reply(buildErr(err), res)
       })
     } else {
       this.emit('request', rid, service, payload, handler)
@@ -139,7 +141,7 @@ class Grc extends Base {
       peer = _.assign({}, peerSecOptsDefault, this.conf.ssl.peer)
     }
 
-    let srv = srvSecOptsDefault
+    const srv = srvSecOptsDefault
     if (this.conf.ssl.srv) {
       peer = _.assign({}, srvSecOptsDefault, this.conf.ssl.srv)
     }
@@ -329,9 +331,9 @@ class Grc extends Base {
       isExecuted = true
 
       if (isPromise) {
-        return err ? _reject(new Error(err)) : _resolve(res)
+        return err ? _reject(buildErr(err)) : _resolve(res)
       } else {
-        return _cb(err ? new Error(err) : null, res)
+        return _cb(buildErr(err), res)
       }
     }
 

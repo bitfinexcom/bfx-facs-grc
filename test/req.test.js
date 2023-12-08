@@ -26,7 +26,7 @@ const caller = {
   ctx: { root: __dirname }
 }
 
-const fac = new Fac(caller, { requestTimeout: 5000 })
+const fac = new Fac(caller, { requestTimeout: 5000 }, { env: 'test' })
 fac.tick = () => {}
 fac.conf = { grape: 'http://127.0.0.1:30001', transport: 'http' }
 
@@ -68,7 +68,7 @@ describe('RPC integration: req', () => {
 
     it('lookup error', done => {
       fac.req('foo:test:net', 'getIpInfo', ['8.8.8.8'], {}, (err) => {
-        assert.strictEqual(err.message, 'Error: ERR_GRAPE_LOOKUP_EMPTY')
+        assert.strictEqual(err.message, 'ERR_GRAPE_LOOKUP_EMPTY')
         done()
       })
     })
@@ -128,7 +128,7 @@ describe('RPC integration: req', () => {
       try {
         await fac.req('foo:test:net', 'getIpInfo', [], {})
       } catch (e) {
-        assert.strictEqual(e.message, 'Error: ERR_GRAPE_LOOKUP_EMPTY')
+        assert.strictEqual(e.message, 'ERR_GRAPE_LOOKUP_EMPTY')
         return
       }
       throw new Error('Should have thrown')
