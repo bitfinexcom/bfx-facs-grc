@@ -1,11 +1,11 @@
 'use strict'
 
-const _ = require('lodash')
 const async = require('async')
 const GrLink = require('grenache-nodejs-link')
 const GrHttp = require('grenache-nodejs-http')
 const Base = require('bfx-facs-base')
 const fs = require('fs')
+const { cloneDeep, difference, union } = require('@bitfinexcom/lib-js-util-base')
 
 const { buildErr } = require('./lib/utils')
 
@@ -138,12 +138,12 @@ class Grc extends Base {
 
     let peer = peerSecOptsDefault
     if (this.conf.ssl.peer) {
-      peer = _.assign({}, peerSecOptsDefault, this.conf.ssl.peer)
+      peer = { ...peerSecOptsDefault, ...this.conf.ssl.peer }
     }
 
     const srv = srvSecOptsDefault
     if (this.conf.ssl.srv) {
-      peer = _.assign({}, srvSecOptsDefault, this.conf.ssl.srv)
+      peer = { ...srvSecOptsDefault, ...this.conf.ssl.srv }
     }
 
     return { peer, srv }
@@ -183,8 +183,8 @@ class Grc extends Base {
   }
 
   tick () {
-    let pubServices = _.clone(this.opts.services)
-    if (!_.isArray(pubServices) || !pubServices.length) {
+    let pubServices = cloneDeep(this.opts.services)
+    if (!Array.isArray(pubServices) || !pubServices.length) {
       pubServices = null
     }
 
@@ -193,9 +193,9 @@ class Grc extends Base {
     }
 
     if (this.peerSec) {
-      _.each(pubServices, s => {
+      for (const s of Object.values(pubServices)) {
         pubServices.push(`sec:${s}`)
-      })
+      }
     }
 
     const port = this.opts.svc_port
@@ -273,19 +273,19 @@ class Grc extends Base {
   }
 
   addServices (ss) {
-    if (!_.isArray(this.opts.services)) {
+    if (!Array.isArray(this.opts.services)) {
       this.opts.services = []
     }
 
-    this.opts.services = _.union(this.opts.services, ss)
+    this.opts.services = union(this.opts.services, ss)
   }
 
   delServices (ss) {
-    if (!_.isArray(this.opts.services)) {
+    if (!Array.isArray(this.opts.services)) {
       this.opts.servies = []
     }
 
-    this.opts.services = _.difference(this.opts.services, ss)
+    this.opts.services = difference(this.opts.services, ss)
   }
 
   req (service, action, args, _opts = {}, _cb) {
@@ -297,18 +297,18 @@ class Grc extends Base {
   }
 
   _doReq (reqType, service, action, args, _opts = {}, _cb) {
-    if (_.isFunction(_opts)) {
+    if (typeof _opts === 'function') {
       _cb = _opts
       _opts = {}
     }
-    const isPromise = !_.isFunction(_cb)
+    const isPromise = typeof _cb !== 'function'
 
-    if (!_.isString(action)) {
+    if (typeof action !== 'string') {
       const err = new Error('ERR_GRC_REQ_ACTION_INVALID')
       return isPromise ? Promise.reject(err) : _cb(err)
     }
 
-    if (!_.isArray(args)) {
+    if (!Array.isArray(args)) {
       const err = new Error('ERR_GRC_REQ_ARGS_INVALID')
       return isPromise ? Promise.reject(err) : _cb(err)
     }
@@ -339,9 +339,7 @@ class Grc extends Base {
 
     const peer = service.indexOf('sec:') === 0 ? this.peerSec : this.peer
 
-    const opts = _.assign({}, {
-      timeout: 120000
-    }, _opts)
+    const opts = { timeout: 120000, ..._opts }
 
     if (isPromise) {
       return new Promise((resolve, reject) => {
