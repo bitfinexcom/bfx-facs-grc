@@ -18,7 +18,7 @@
     "unit": "mocha"
   },
   "dependencies": {
-    "@bitfinex/bfx-facs-base": "https://github.com/bitfinexcom/bfx-facs-base.git",
+    "@bitfinex/bfx-facs-base": "git+https://github.com/bitfinexcom/bfx-facs-base.git",
     "@bitfinexcom/lib-js-util-base": "git+https://github.com/bitfinexcom/lib-js-util-base#v1.20.0",
     "async": "3.2.6",
     "grenache-nodejs-http": "1.0.1",
