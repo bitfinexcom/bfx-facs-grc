@@ -5,8 +5,8 @@
 const assert = require('assert')
 const { promisify } = require('util')
 
-const createGrapes = require('bfx-svc-test-helper/grapes')
-const createFxGrenache = require('bfx-svc-test-helper/fauxgrenache')
+const createGrapes = require('@bitfinex/bfx-svc-test-helper/grapes')
+const createFxGrenache = require('@bitfinex/bfx-svc-test-helper/fauxgrenache')
 
 const Fac = require('..')
 
