@@ -1,6 +1,6 @@
 {
   "name": "@bitfinex/bfx-facs-grc",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": false,
   "description": "Bitfinex Grenache Facility",
   "author": {
@@ -39,7 +39,7 @@
     }
   ],
   "devDependencies": {
-    "bfx-svc-test-helper": "git+https://github.com/bitfinexcom/bfx-svc-test-helper.git",
+    "@bitfinex/bfx-svc-test-helper": "git+https://github.com/bitfinexcom/bfx-svc-test-helper.git",
     "mocha": "11.2.2",
     "standard": "17.1.2"
   }
