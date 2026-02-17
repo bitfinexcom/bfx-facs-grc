@@ -5,7 +5,7 @@ const GrLink = require('grenache-nodejs-link')
 const GrHttp = require('grenache-nodejs-http')
 const Base = require('@bitfinex/bfx-facs-base')
 const fs = require('fs')
-const { cloneDeep, difference, union } = require('@bitfinexcom/lib-js-util-base')
+const { cloneDeep, difference, union } = require('@bitfinex/lib-js-util-base')
 
 const { buildErr } = require('./lib/utils')
 
