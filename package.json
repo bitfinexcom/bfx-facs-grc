@@ -21,7 +21,7 @@
     "@bitfinex/bfx-facs-base": "git+https://github.com/bitfinexcom/bfx-facs-base.git",
     "@bitfinex/lib-js-util-base": "git+https://github.com/bitfinexcom/lib-js-util-base#v2.0.0",
     "async": "3.2.6",
-    "grenache-nodejs-http": "1.0.1",
+    "grenache-nodejs-http": "1.0.2",
     "grenache-nodejs-link": "1.0.2"
   },
   "engines": {
