@@ -12,8 +12,8 @@
     "bitfinex"
   ],
   "scripts": {
-    "lint": "standard",
-    "lint:fix": "standard --fix",
+    "lint": "bfx-lint-js . --mocha",
+    "lint:fix": "bfx-lint-js . --mocha --fix",
     "test": "npm run lint && npm run unit",
     "unit": "mocha"
   },
@@ -25,7 +25,7 @@
     "grenache-nodejs-link": "1.0.2"
   },
   "engines": {
-    "node": ">=16.0"
+    "node": ">=22.0"
   },
   "license": "Apache-2.0",
   "repository": {
@@ -40,7 +40,19 @@
   ],
   "devDependencies": {
     "@bitfinex/bfx-svc-test-helper": "git+https://github.com/bitfinexcom/bfx-svc-test-helper.git",
-    "mocha": "11.2.2",
-    "standard": "17.1.2"
+    "@bitfinex/lint-js": "1.1.0",
+    "mocha": "12.0.3"
+  },
+  "overrides": {
+    "mocha": {
+      "glob": "14.0.2",
+      "minimatch": "11.0.1"
+    },
+    "grenache-nodejs-base": {
+      "uuid": "11.1.1"
+    },
+    "grenache-nodejs-link": {
+      "uuid": "11.1.1"
+    }
   }
 }
