@@ -1,13 +1,9 @@
-/* eslint-env mocha */
-
 'use strict'
 
-const assert = require('assert')
+const test = require('brittle')
 const { promisify } = require('util')
-
 const createGrapes = require('@bitfinex/bfx-svc-test-helper/grapes')
 const createFxGrenache = require('@bitfinex/bfx-svc-test-helper/fauxgrenache')
-
 const Fac = require('..')
 
 const stubs = {
@@ -31,110 +27,128 @@ fac.tick = () => {}
 fac.conf = { grape: 'http://127.0.0.1:30001', transport: 'http' }
 
 let fxg
-describe('RPC integration: req', () => {
-  before(async function () {
-    this.timeout(20000)
 
-    await grapes.start()
-    fxg = createFxGrenache(stubs, grapes)
-    await fxg.start()
+const testCase = (testBlock) => async (t) => {
+  try {
+    await before()
 
-    const start = promisify(fac.start).bind(fac)
-    await start()
-  })
+    await testBlock(t)
+  } finally {
+    await after()
+  }
+}
 
-  after(async function () {
-    this.timeout(5000)
+const before = async () => {
+  await grapes.start()
+  fxg = createFxGrenache(stubs, grapes)
+  await fxg.start()
 
-    await grapes.stop()
-    await fxg.stop()
-    fac.stop()
-  })
+  const start = promisify(fac.start).bind(fac)
+  await start()
+}
 
-  describe('callback', () => {
-    it('options defaults', done => {
-      fac.req('rest:util:net', 'getIpInfo', ['8.8.8.8'], (_err, res) => {
-        assert.deepStrictEqual(['8.8.8.8', { country: 'US', region: 'CA' }], res)
-        done()
+const after = async () => {
+  await grapes.stop()
+  await fxg.stop()
+  fac.stop()
+}
+
+test('RPC integration: req', testCase(async (t) => {
+  await t.test('callback', async (t) => {
+    await t.test('options defaults', async (t) => {
+      await new Promise(resolve => {
+        fac.req('rest:util:net', 'getIpInfo', ['8.8.8.8'], (_err, res) => {
+          t.alike(['8.8.8.8', { country: 'US', region: 'CA' }], res)
+          resolve()
+        })
       })
     })
 
-    it('success', done => {
-      fac.req('rest:util:net', 'getIpInfo', ['8.8.8.8'], {}, (_err, res) => {
-        assert.deepStrictEqual(['8.8.8.8', { country: 'US', region: 'CA' }], res)
-        done()
+    await t.test('success', async (t) => {
+      await new Promise(resolve => {
+        fac.req('rest:util:net', 'getIpInfo', ['8.8.8.8'], {}, (_err, res) => {
+          t.alike(['8.8.8.8', { country: 'US', region: 'CA' }], res)
+          resolve()
+        })
       })
     })
 
-    it('lookup error', done => {
-      fac.req('foo:test:net', 'getIpInfo', ['8.8.8.8'], {}, (err) => {
-        assert.strictEqual(err.message, 'ERR_GRAPE_LOOKUP_EMPTY')
-        done()
+    await t.test('lookup error', async (t) => {
+      await new Promise(resolve => {
+        fac.req('foo:test:net', 'getIpInfo', ['8.8.8.8'], {}, (err) => {
+          t.is(err.message, 'ERR_GRAPE_LOOKUP_EMPTY')
+          resolve()
+        })
       })
     })
 
-    it('double cb error', done => {
+    await t.test('double cb error', async (t) => {
       const originalPeer = fac.peer
       const originalConsoleError = console.error
 
-      let errorArgs
-      console.error = (...args) => {
-        if (errorArgs) {
-          done(new Error('Should have been called once'))
+      await new Promise((resolve, reject) => {
+        let errorArgs
+        console.error = (...args) => {
+          if (errorArgs) {
+            reject(new Error('Should have been called once'))
+          }
+          errorArgs = args
         }
-        errorArgs = args
-      }
-
-      fac.peer = {
-        request (service, args, opts, cb) {
-          cb()
-          cb()
-          fac.peer = originalPeer
-          console.error = originalConsoleError
-          assert.strictEqual(errorArgs[0], 'ERR_DOUBLE_CB')
-          assert.strictEqual(errorArgs[1], 'rest:util:net')
-          assert.strictEqual(errorArgs[2], 'getIpInfo')
-          done()
+        fac.peer = {
+          request (service, args, opts, cb) {
+            cb()
+            cb()
+            fac.peer = originalPeer
+            console.error = originalConsoleError
+            t.is(errorArgs[0], 'ERR_DOUBLE_CB')
+            t.is(errorArgs[1], 'rest:util:net')
+            t.is(errorArgs[2], 'getIpInfo')
+          }
         }
-      }
 
-      fac.req('rest:util:net', 'getIpInfo', [], {}, () => {
-        assert.strictEqual(errorArgs, undefined)
+        fac.req('rest:util:net', 'getIpInfo', [], {}, () => {
+          t.is(errorArgs, undefined)
+          resolve()
+        })
       })
     })
 
-    it('invalid args', done => {
-      fac.req('rest:util:net', 'getIpInfo', {}, {}, (err, res) => {
-        assert.strictEqual(err.message, 'ERR_GRC_REQ_ARGS_INVALID')
-        done()
+    await t.test('invalid args', async (t) => {
+      await new Promise(resolve => {
+        fac.req('rest:util:net', 'getIpInfo', {}, {}, (err) => {
+          t.is(err.message, 'ERR_GRC_REQ_ARGS_INVALID')
+          resolve()
+        })
       })
     })
 
-    it('invalid action', done => {
-      fac.req('rest:util:net', {}, [], {}, (err, res) => {
-        assert.strictEqual(err.message, 'ERR_GRC_REQ_ACTION_INVALID')
-        done()
+    await t.test('invalid action', async (t) => {
+      await new Promise(resolve => {
+        fac.req('rest:util:net', {}, [], {}, (err) => {
+          t.is(err.message, 'ERR_GRC_REQ_ACTION_INVALID')
+          resolve()
+        })
       })
     })
   })
 
-  describe('promise', () => {
-    it('success', async () => {
+  await t.test('promise', async (t) => {
+    await t.test('success', async (t) => {
       const res = await fac.req('rest:util:net', 'getIpInfo', ['8.8.8.8'], {})
-      assert.deepStrictEqual(['8.8.8.8', { country: 'US', region: 'CA' }], res)
+      t.alike(['8.8.8.8', { country: 'US', region: 'CA' }], res)
     })
 
-    it('lookup error', async () => {
+    await t.test('lookup error', async (t) => {
       try {
         await fac.req('foo:test:net', 'getIpInfo', [], {})
       } catch (e) {
-        assert.strictEqual(e.message, 'ERR_GRAPE_LOOKUP_EMPTY')
+        t.is(e.message, 'ERR_GRAPE_LOOKUP_EMPTY')
         return
       }
       throw new Error('Should have thrown')
     })
 
-    it('double cb error', async () => {
+    await t.test('double cb error', async (t) => {
       const originalPeer = fac.peer
       const originalConsoleError = console.error
 
@@ -142,9 +156,9 @@ describe('RPC integration: req', () => {
         request (service, args, opts, cb) {
           cb()
           cb()
-          assert.strictEqual(errorArgs[0], 'ERR_DOUBLE_CB')
-          assert.strictEqual(errorArgs[1], 'rest:util:net')
-          assert.strictEqual(errorArgs[2], 'getIpInfo')
+          t.is(errorArgs[0], 'ERR_DOUBLE_CB')
+          t.is(errorArgs[1], 'rest:util:net')
+          t.is(errorArgs[2], 'getIpInfo')
           fac.peer = originalPeer
           console.error = originalConsoleError
         }
@@ -161,24 +175,24 @@ describe('RPC integration: req', () => {
       await fac.req('rest:util:net', 'getIpInfo', [], {})
     })
 
-    it('invalid args', async () => {
+    await t.test('invalid args', async (t) => {
       try {
         await fac.req('rest:util:net', 'getIpInfo', {}, {})
       } catch (e) {
-        assert.strictEqual(e.message, 'ERR_GRC_REQ_ARGS_INVALID')
+        t.is(e.message, 'ERR_GRC_REQ_ARGS_INVALID')
         return
       }
       throw new Error('Should have thrown')
     })
 
-    it('invalid action', async () => {
+    await t.test('invalid action', async (t) => {
       try {
         await fac.req('rest:util:net', {}, [], {})
       } catch (e) {
-        assert.strictEqual(e.message, 'ERR_GRC_REQ_ACTION_INVALID')
+        t.is(e.message, 'ERR_GRC_REQ_ACTION_INVALID')
         return
       }
       throw new Error('Should have thrown')
     })
   })
-})
+}))
