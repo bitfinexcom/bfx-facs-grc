@@ -1,6 +1,6 @@
 {
   "name": "@bitfinex/bfx-facs-grc",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": false,
   "description": "Bitfinex Grenache Facility",
   "author": {
@@ -21,8 +21,8 @@
     "@bitfinex/bfx-facs-base": "git+https://github.com/bitfinexcom/bfx-facs-base.git#v2.0.0",
     "@bitfinex/lib-js-util-base": "git+https://github.com/bitfinexcom/lib-js-util-base.git#v3.0.0",
     "async": "^3.2.6",
-    "grenache-nodejs-http": "2.0.0",
-    "grenache-nodejs-link": "2.0.0"
+    "grenache-nodejs-http": "2.0.2",
+    "grenache-nodejs-link": "2.0.2"
   },
   "engines": {
     "node": ">=22.0"
@@ -39,7 +39,7 @@
     }
   ],
   "devDependencies": {
-    "@bitfinex/bfx-svc-test-helper": "git+https://github.com/bitfinexcom/bfx-svc-test-helper.git#v2.0.0",
+    "@bitfinex/bfx-svc-test-helper": "git+https://github.com/bitfinexcom/bfx-svc-test-helper.git#v2.0.2",
     "@bitfinex/lint-js": "^1.1.0",
     "brittle": "^4.5.0"
   }
